@@ -17,9 +17,12 @@ namespace rouge
         public UIPanel xpBarFill;
         public UIText levelText;
 
-        // 【新增】属性面板 (背包打开时显示)
         public UIPanel statsPanel;
         public UIText statsText;
+
+        // 【新增】土豆币计数器
+        public UIPanel coinPanel;
+        public UIText coinText;
 
         public override void OnInitialize()
         {
@@ -60,27 +63,39 @@ namespace rouge
             xpBarBackground.Append(levelText);
             Append(xpBarBackground);
 
-            // === 【新增】背包属性面板 ===
+            // === 背包属性面板 ===
             statsPanel = new UIPanel();
-            statsPanel.Width.Set(200, 0);
-            statsPanel.Height.Set(350, 0);
-            // 放在屏幕左侧，稍微往下一点，避开原版背包区域
-            statsPanel.HAlign = 0.05f;
-            statsPanel.VAlign = 0.5f;
+            statsPanel.Width.Set(200, 0); statsPanel.Height.Set(350, 0);
+            statsPanel.HAlign = 0.05f; statsPanel.VAlign = 0.5f;
             statsPanel.BackgroundColor = new Color(30, 30, 40, 230);
 
             statsText = new UIText("属性...", 0.75f);
-            statsText.HAlign = 0.5f;
-            statsText.VAlign = 0.5f;
-
+            statsText.HAlign = 0.5f; statsText.VAlign = 0.5f;
             statsPanel.Append(statsText);
-            // 注意：我们不直接 Append(statsPanel)，而是在 Update 里手动控制它的显示
+
+            // === 【新增】右上角土豆币 UI ===
+            coinPanel = new UIPanel();
+            coinPanel.Width.Set(150, 0);
+            coinPanel.Height.Set(40, 0);
+            // HAlign 1f = 最右边，Left 设置负数往回拉一点
+            coinPanel.HAlign = 1f;
+            coinPanel.Left.Set(-20, 0); // 距离右边缘 20 像素
+            coinPanel.Top.Set(20, 0);   // 距离顶边缘 20 像素
+            coinPanel.BackgroundColor = new Color(255, 215, 0, 150); // 金色半透明背景
+
+            coinText = new UIText("Coins: 0", 0.8f, true);
+            coinText.HAlign = 0.5f;
+            coinText.VAlign = 0.5f;
+
+            coinPanel.Append(coinText);
+            Append(coinPanel);
         }
 
         public override void Update(GameTime gameTime)
         {
             base.Update(gameTime);
 
+            // 倒计时更新
             if (!BrotatoSystem.IsWaveActive && !BrotatoSystem.IsSelectingWeapon && !BrotatoSystem.IsLevelingUp)
             {
                 statusText.SetText("等待中..."); progressBar.Width.Set(0, 0f);
@@ -97,33 +112,35 @@ namespace rouge
             if (SubworldLibrary.SubworldSystem.IsActive<BrotatoDimension>())
             {
                 BrotatoPlayer bp = Main.LocalPlayer.GetModPlayer<BrotatoPlayer>();
+
+                // 经验条更新
                 float xpPercent = (float)bp.CurrentXP / (float)bp.XPToNextLevel;
                 if (xpPercent > 1f) xpPercent = 1f;
-
                 xpBarFill.Width.Set(0, xpPercent);
                 levelText.SetText($"LV.{bp.Level} ({bp.CurrentXP}/{bp.XPToNextLevel})");
 
-                // === 属性面板显示逻辑 ===
-                // 如果背包打开了，且面板还没有加上去 -> 加上
-                if (Main.playerInventory && !HasChild(statsPanel))
-                {
-                    Append(statsPanel);
-                }
-                // 如果背包关了，且面板还在 -> 移除
-                else if (!Main.playerInventory && HasChild(statsPanel))
-                {
-                    RemoveChild(statsPanel);
-                }
+                if (xpBarBackground.IsMouseHovering) Main.hoverItemName = bp.GetStatInfo();
 
-                // 更新面板文字
-                if (Main.playerInventory)
+                // 属性面板开关
+                if (Main.playerInventory && !HasChild(statsPanel)) Append(statsPanel);
+                else if (!Main.playerInventory && HasChild(statsPanel)) RemoveChild(statsPanel);
+                if (Main.playerInventory) statsText.SetText(bp.GetStatInfo());
+
+                // === 【新增】土豆币数量更新 ===
+                // 遍历背包计算总数
+                long totalCoins = 0;
+                int coinType = ModContent.ItemType<PotatoCoin>();
+                foreach (var item in Main.LocalPlayer.inventory)
                 {
-                    statsText.SetText(bp.GetStatInfo());
+                    if (item.active && item.type == coinType)
+                    {
+                        totalCoins += item.stack;
+                    }
                 }
+                coinText.SetText($"土豆币: {totalCoins}");
             }
             else
             {
-                // 如果不在土豆世界，确保面板不显示
                 if (HasChild(statsPanel)) RemoveChild(statsPanel);
             }
         }
