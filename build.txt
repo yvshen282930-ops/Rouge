@@ -1,0 +1,5 @@
+displayName = RougeTarra
+author = xubaiyan
+version = 0.1
+modDependencies = SubworldLibrary
+modReferences = SubworldLibrary

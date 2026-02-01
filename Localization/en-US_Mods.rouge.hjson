@@ -1,0 +1,13 @@
+Biomes: {
+	BrotatoBiome: {
+		DisplayName: Brotato Biome
+		TownNPCDialogueName: the Brotato Biome
+	}
+}
+
+Items: {
+	PotatoCoin: {
+		DisplayName: Potato Coin
+		Tooltip: ""
+	}
+}
